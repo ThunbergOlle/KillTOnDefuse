@@ -1,30 +1,43 @@
 #include <sourcemod>
+#include <sdktools>
+#include <cstrike>
+
+#pragma newdecls required
+#pragma semicolon 1
+
+ConVar hPluginEnabled = null;
+
 public Plugin myinfo = {
-    name="KillTsOnDefuse",
-    author="Olle Thunberg",
-	description = "Kills remaining teorists if bomb has been defused.",
-	version = "1.0",
-	url = "http://www.sourcemod.net/"
+    name = "[KTOD] Kill Terrorists on Defuse",
+    author = "B3none, Olle Thunberg",
+    description = "Kills remaining teorists if bomb has been defused.",
+    version = "1.0.1",
+    url = "https://github.com/b3none"
 }
 
-ConVar sm_enabled = null;
-
-public void OnPluginStart(){
-
-    HookEvent("bomb_defused", Event_KillT, EventHookMode_PostNoCopy);
-    sm_enabled = CreateConVar("sm_enabled", "1", "If the plugin is enabled or not 1 = enabled, 2 = disabled");
-	AutoExecConfig(true, "KillTsOnDefuse");
+public void OnPluginStart()
+{
+    HookEvent("bomb_defused", Event_BombDefused, EventHookMode_PostNoCopy);
+    
+    hPluginEnabled = CreateConVar("sm_ktod_enabled", "1", "If the plugin is enabled or not 1 = enabled, 0 = disabled", _, true, 0.0, true, 1.0);
+    AutoExecConfig(true, "ktod");
 }
-public void Event_KillT(Event event, const char[] name, bool dontBroadcast){
-    int defuser_id = event.GetInt("userid");
 
-    int defuser = GetClientOfUserId(defuser_id);
-
-    char defuserName[MAX_NAME_LENGTH];
-
-    GetClientName(defuser, defuserName, sizeof(defuserName));
-
-    if(GetConVarInt(sm_enabled) == 1){
-        ServerCommand("sm_slay @t");
+public void Event_BombDefused(Event event, const char[] name, bool dontBroadcast)
+{
+    if (GetConVarInt(hPluginEnabled) == 1)
+    {
+    	for (int i = 1; i <= MaxClients; i++)
+	{
+	    if (IsValidClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == CS_TEAM_T)
+	    {
+	        ForcePlayerSuicide(i);
+	    }
+	}
     }
+}
+
+stock bool IsValidClient(int client)
+{
+    return IsClientInGame(client) && client > 0 && client <= MaxClients && IsClientConnected(client) && IsClientAuthorized(client) && !IsFakeClient(client);
 }
